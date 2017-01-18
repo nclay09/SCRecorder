@@ -963,7 +963,7 @@ static char* SCRecorderPhotoOptionsContext = "PhotoOptionsContext";
 - (void)configureDevice:(AVCaptureDevice*)newDevice mediaType:(NSString*)mediaType error:(NSError**)error {
     AVCaptureDeviceInput *currentInput = [self currentDeviceInputForMediaType:mediaType];
     AVCaptureDevice *currentUsedDevice = currentInput.device;
-    
+
     if (currentUsedDevice != newDevice) {
         if ([mediaType isEqualToString:AVMediaTypeVideo]) {
             NSError *error;
@@ -971,8 +971,18 @@ static char* SCRecorderPhotoOptionsContext = "PhotoOptionsContext";
                 if (newDevice.isSmoothAutoFocusSupported) {
                     newDevice.smoothAutoFocusEnabled = YES;
                 }
-                newDevice.subjectAreaChangeMonitoringEnabled = true;
-                
+
+                                if ([newDevice isFocusModeSupported:AVCaptureFocusModeAutoFocus]) {
+                                       newDevice.subjectAreaChangeMonitoringEnabled = true;
+                                    } else {
+                                            if ([newDevice isExposureModeSupported:AVCaptureExposureModeContinuousAutoExposure]) {
+                                                    newDevice.exposureMode = AVCaptureExposureModeContinuousAutoExposure;
+                                                }
+                                            if ([newDevice isFocusModeSupported:AVCaptureFocusModeContinuousAutoFocus]) {
+                                                    newDevice.exposureMode = AVCaptureFocusModeContinuousAutoFocus;
+                                                }
+                                        }
+
                 if (newDevice.isLowLightBoostSupported) {
                     newDevice.automaticallyEnablesLowLightBoostWhenAvailable = YES;
                 }
@@ -984,13 +994,13 @@ static char* SCRecorderPhotoOptionsContext = "PhotoOptionsContext";
         } else {
             _audioInputAdded = NO;
         }
-        
+
         AVCaptureDeviceInput *newInput = nil;
-        
+
         if (newDevice != nil) {
             newInput = [[AVCaptureDeviceInput alloc] initWithDevice:newDevice error:error];
         }
-        
+
         if (*error == nil) {
             if (currentInput != nil) {
                 [_captureSession removeInput:currentInput];
@@ -998,17 +1008,17 @@ static char* SCRecorderPhotoOptionsContext = "PhotoOptionsContext";
                     [self removeVideoObservers:currentInput.device];
                 }
             }
-            
+
             if (newInput != nil) {
                 if ([_captureSession canAddInput:newInput]) {
                     [_captureSession addInput:newInput];
                     if ([newInput.device hasMediaType:AVMediaTypeVideo]) {
                         _videoInputAdded = YES;
-                        
+
                         [self addVideoObservers:newInput.device];
                         [self _configureVideoStabilization];
                         [self _configureFrontCameraMirroring:_mirrorOnFrontCamera && newInput.device.position == AVCaptureDevicePositionFront];
-                        
+
                     } else {
                         _audioInputAdded = YES;
                     }
@@ -1111,8 +1121,8 @@ static char* SCRecorderPhotoOptionsContext = "PhotoOptionsContext";
 - (void)_applyPointOfInterest:(CGPoint)point continuousMode:(BOOL)continuousMode {
     AVCaptureDevice *device = [self.currentVideoDeviceInput device];
     AVCaptureFocusMode focusMode = continuousMode ? AVCaptureFocusModeContinuousAutoFocus : AVCaptureFocusModeAutoFocus;
-    AVCaptureExposureMode exposureMode = continuousMode ? AVCaptureExposureModeContinuousAutoExposure : AVCaptureExposureModeAutoExpose;
-    AVCaptureWhiteBalanceMode whiteBalanceMode = continuousMode ? AVCaptureWhiteBalanceModeContinuousAutoWhiteBalance : AVCaptureWhiteBalanceModeAutoWhiteBalance;
+    AVCaptureExposureMode exposureMode = continuousMode ? AVCaptureExposureModeAutoExpose : AVCaptureExposureModeAutoExpose;
+    AVCaptureWhiteBalanceMode whiteBalanceMode = continuousMode ? AVCaptureWhiteBalanceModeAutoWhiteBalance : AVCaptureWhiteBalanceModeAutoWhiteBalance;
     
     NSError *error;
     if ([device lockForConfiguration:&error]) {
