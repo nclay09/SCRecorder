@@ -802,7 +802,6 @@ static char* SCRecorderPhotoOptionsContext = "PhotoOptionsContext";
                                 [delegate recorder:self didAppendAudioSampleBufferInSession:recordSession];
                             });
                         }
-
                         [self checkRecordSessionDuration:recordSession];
                     } else {
                         if ([delegate respondsToSelector:@selector(recorder:didSkipAudioSampleBufferInSession:)]) {
@@ -838,20 +837,30 @@ static char* SCRecorderPhotoOptionsContext = "PhotoOptionsContext";
         }
     } else if (captureOutput == _audioOutput) {
         _lastAudioBuffer.sampleBuffer = sampleBuffer;
-//        NSLog(@"AUDIO BUFFER: %fs (%fs)", CMTimeGetSeconds(CMSampleBufferGetPresentationTimeStamp(sampleBuffer)), CMTimeGetSeconds(CMSampleBufferGetDuration(sampleBuffer)));
+        //        NSLog(@"AUDIO BUFFER: %fs (%fs)", CMTimeGetSeconds(CMSampleBufferGetPresentationTimeStamp(sampleBuffer)), CMTimeGetSeconds(CMSampleBufferGetDuration(sampleBuffer)));
 
         if (_audioConfiguration.shouldIgnore) {
             return;
         }
     }
 
-    if (!_initializeSessionLazily || _isRecording) {
+    if (!_initializeSessionLazily) {
         SCRecordSession *recordSession = _session;
         if (recordSession != nil) {
             if (captureOutput == _videoOutput) {
-                [self _handleVideoSampleBuffer:sampleBuffer withSession:recordSession connection:connection];
+                if (_isRecording) {
+                    [self _handleVideoSampleBuffer:sampleBuffer withSession:recordSession connection:connection];
+                }
             } else if (captureOutput == _audioOutput) {
-                [self _handleAudioSampleBuffer:sampleBuffer withSession:recordSession];
+                if (_isRecording) {
+                    [self _handleAudioSampleBuffer:sampleBuffer withSession:recordSession];
+                } else {
+                    if ([_delegate respondsToSelector:@selector(recorder:didListenToAudioSampleBuffer:)]) {
+                        dispatch_async(dispatch_get_main_queue(), ^{
+                            [_delegate recorder:self didListenToAudioSampleBuffer:sampleBuffer];
+                        });
+                    }
+                }
             }
         }
     }
