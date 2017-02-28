@@ -855,10 +855,9 @@ static char* SCRecorderPhotoOptionsContext = "PhotoOptionsContext";
                 if (_isRecording) {
                     [self _handleAudioSampleBuffer:sampleBuffer withSession:recordSession];
                 } else {
-                    if ([_delegate respondsToSelector:@selector(recorder:didListenToAudioSampleBuffer:)]) {
-                        dispatch_async(dispatch_get_main_queue(), ^{
-                            [_delegate recorder:self didListenToAudioSampleBuffer:sampleBuffer];
-                        });
+                    id<SCRecorderDelegate> delegate = self.delegate;
+                    if ([delegate respondsToSelector:@selector(recorder:didListenToAudioSampleBuffer:)]) {
+                        [delegate recorder:self didListenToAudioSampleBuffer:sampleBuffer];
                     }
                 }
             }
