@@ -687,8 +687,8 @@ static CGContextRef SCCreateContextFromPixelBuffer(CVPixelBufferRef pixelBuffer)
     if (![_writer startWriting]) {
         EnsureSuccess(_writer.error, completionHandler);
     }
-    
-    [_writer startSessionAtSourceTime:kCMTimeZero];
+
+    [_writer startSessionAtSourceTime:_timeRange.start];
     
     _totalDuration = CMTimeGetSeconds(_inputAsset.duration);
 
