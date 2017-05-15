@@ -231,6 +231,9 @@ static CGContextRef SCCreateContextFromPixelBuffer(CVPixelBufferRef pixelBuffer)
         videoReadingQueue.maxQueueSize = 2;
 
         [videoReadingQueue startProcessingWithBlock:^id{
+            if (self.cancelled) {
+              return nil;
+            }
             CMSampleBufferRef sampleBuffer = [wSelf.videoOutput copyNextSampleBuffer];
             SCSampleBufferHolder *holder = nil;
             
