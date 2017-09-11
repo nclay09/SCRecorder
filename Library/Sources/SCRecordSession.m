@@ -107,7 +107,8 @@ NSString * const SCRecordSessionDocumentDirectory = @"DocumentDirectory";
     
     if (self) {
         _segments = [[NSMutableArray alloc] init];
-        
+        _recordSegmentsFirstFramePresentationTime = [NSMutableArray array];
+
         _assetWriter = nil;
         _videoInput = nil;
         _audioInput = nil;
@@ -115,6 +116,7 @@ NSString * const SCRecordSessionDocumentDirectory = @"DocumentDirectory";
         _videoInitializationFailed = NO;
         _currentSegmentCount = 0;
         _timeOffset = kCMTimeZero;
+        _currentSegmentFirstFramePresentationTime = kCMTimeInvalid;
         _lastTimeAudio = kCMTimeZero;
         _currentSegmentDuration = kCMTimeZero;
         _segmentsDuration = kCMTimeZero;
@@ -180,7 +182,8 @@ NSString * const SCRecordSessionDocumentDirectory = @"DocumentDirectory";
     [self dispatchSyncOnSessionQueue:^{
         SCRecordSessionSegment *segment = [_segments objectAtIndex:segmentIndex];
         [_segments removeObjectAtIndex:segmentIndex];
-        
+        [_recordSegmentsFirstFramePresentationTime removeObjectAtIndex:segmentIndex];
+
         CMTime segmentDuration = segment.duration;
         
         if (CMTIME_IS_VALID(segmentDuration)) {
@@ -222,8 +225,9 @@ NSString * const SCRecordSessionDocumentDirectory = @"DocumentDirectory";
                 [segment deleteFile];
             }
             [_segments removeObjectAtIndex:0];
+            [_recordSegmentsFirstFramePresentationTime removeObjectAtIndex:0];
         }
-        
+
         _segmentsDuration = kCMTimeZero;
     }];
 }
@@ -334,6 +338,7 @@ NSString * const SCRecordSessionDocumentDirectory = @"DocumentDirectory";
         if ([writer startWriting]) {
             //                NSLog(@"Starting session at %fs", CMTimeGetSeconds(_lastTime));
             _timeOffset = kCMTimeZero;
+            _currentSegmentFirstFramePresentationTime = kCMTimeInvalid;
             _sessionStartTime = kCMTimeInvalid;
             //                _sessionStartedTime = _lastTime;
             //                _currentRecordDurationWithoutCurrentSegment = _currentRecordDuration;
@@ -414,6 +419,7 @@ NSString * const SCRecordSessionDocumentDirectory = @"DocumentDirectory";
     [self dispatchSyncOnSessionQueue:^{
         [_segments addObject:segment];
         _segmentsDuration = CMTimeAdd(_segmentsDuration, segment.duration);
+        [_recordSegmentsFirstFramePresentationTime addObject:[NSValue valueWithCMTime:segment.initialPresentationTime]];
     }];
 }
 
@@ -421,6 +427,7 @@ NSString * const SCRecordSessionDocumentDirectory = @"DocumentDirectory";
     [self dispatchSyncOnSessionQueue:^{
         [_segments insertObject:segment atIndex:segmentIndex];
         _segmentsDuration = CMTimeAdd(_segmentsDuration, segment.duration);
+        [_recordSegmentsFirstFramePresentationTime addObject:[NSValue valueWithCMTime:segment.initialPresentationTime]];
     }];
 }
 
@@ -471,17 +478,18 @@ NSString * const SCRecordSessionDocumentDirectory = @"DocumentDirectory";
     _movieFileOutput = nil;
 }
 
-- (void)appendRecordSegmentUrl:(NSURL *)url info:(NSDictionary *)info error:(NSError *)error completionHandler:(void (^)(SCRecordSessionSegment *, NSError *))completionHandler {
+- (void)appendRecordSegmentUrl:(NSURL *)url info:(NSDictionary *)info initialPresentationTime:(CMTime)initialPresentationTime error:(NSError *)error completionHandler:(void (^)(SCRecordSessionSegment *, NSError *))completionHandler {
     [self dispatchSyncOnSessionQueue:^{
         SCRecordSessionSegment *segment = nil;
         
         if (error == nil) {
             segment = [SCRecordSessionSegment segmentWithURL:url info:info];
+            segment.initialPresentationTime = initialPresentationTime;
             [self addSegment:segment];
         }
         
         [self _destroyAssetWriter];
-        
+
         dispatch_async(dispatch_get_main_queue(), ^{
             if (completionHandler != nil) {
                 completionHandler(segment, error);
@@ -520,8 +528,8 @@ NSString * const SCRecordSessionDocumentDirectory = @"DocumentDirectory";
                         [writer endSessionAtSourceTime:CMTimeAdd(_currentSegmentDuration, _sessionStartTime)];
 
                         [writer finishWritingWithCompletionHandler: ^{
-                            [self appendRecordSegmentUrl:writer.outputURL info:info error:writer.error completionHandler:completionHandler];
-                        }];
+                            [self appendRecordSegmentUrl:writer.outputURL info:info initialPresentationTime:_currentSegmentFirstFramePresentationTime error:writer.error completionHandler:completionHandler];
+                             }];
                     }
                 } else {
                     [_movieFileOutput stopRecording];
@@ -696,6 +704,10 @@ NSString * const SCRecordSessionDocumentDirectory = @"DocumentDirectory";
 }
 
 - (void)appendVideoPixelBuffer:(CVPixelBufferRef)videoPixelBuffer atTime:(CMTime)actualBufferTime duration:(CMTime)duration completion:(void (^)(BOOL))completion {
+    if (CMTIME_IS_INVALID(_currentSegmentFirstFramePresentationTime)) {
+        _currentSegmentFirstFramePresentationTime = actualBufferTime;
+    }
+
     [self _startSessionIfNeededAtTime:actualBufferTime];
 
     CMTime bufferTimestamp = CMTimeSubtract(actualBufferTime, _timeOffset);
@@ -880,7 +892,7 @@ NSString * const SCRecordSessionDocumentDirectory = @"DocumentDirectory";
 }
 
 - (CMTime)currentSegmentDuration {
-    return _movieFileOutput.isRecording ? _movieFileOutput.recordedDuration : _currentSegmentDuration;
+    return _movieFileOutput != nil ? _movieFileOutput.recordedDuration : _currentSegmentDuration;
 }
 
 - (CMTime)duration {

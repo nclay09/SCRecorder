@@ -28,6 +28,11 @@
 @property (readonly, nonatomic) CMTime duration;
 
 /**
+ The intial presentation time of this segment
+ */
+@property (readwrite, nonatomic) CMTime initialPresentationTime;
+
+/**
  The thumbnail that represents this segment
  */
 @property (readonly, nonatomic) UIImage *__nullable thumbnail;

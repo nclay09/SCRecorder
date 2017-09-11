@@ -658,47 +658,6 @@ static char* SCRecorderPhotoOptionsContext = "PhotoOptionsContext";
     });
 }
 
-- (void)captureOutput:(AVCaptureFileOutput *)captureOutput didFinishRecordingToOutputFileAtURL:(NSURL *)outputFileURL fromConnections:(NSArray *)connections error:(NSError *)error {
-    _isRecording = NO;
-    
-    dispatch_async(_sessionQueue, ^{
-        BOOL hasComplete = NO;
-        NSError *actualError = error;
-        if ([actualError.localizedDescription isEqualToString:@"Recording Stopped"]) {
-            actualError = nil;
-            hasComplete = YES;
-        }
-        
-        [_session appendRecordSegmentUrl:outputFileURL info:[self _createSegmentInfo] error:actualError completionHandler:^(SCRecordSessionSegment *segment, NSError *error) {
-            void (^pauseCompletionHandler)() = _pauseCompletionHandler;
-            _pauseCompletionHandler = nil;
-            
-            SCRecordSession *recordSession = _session;
-            
-            if (recordSession != nil) {
-                id<SCRecorderDelegate> delegate = self.delegate;
-                if ([delegate respondsToSelector:@selector(recorder:didCompleteSegment:inSession:error:)]) {
-                    [delegate recorder:self didCompleteSegment:segment inSession:recordSession error:error];
-                }
-                
-                if (hasComplete || (CMTIME_IS_VALID(_maxRecordDuration) && CMTIME_COMPARE_INLINE(recordSession.duration, >=, _maxRecordDuration))) {
-                    if ([delegate respondsToSelector:@selector(recorder:didCompleteSession:)]) {
-                        [delegate recorder:self didCompleteSession:recordSession];
-                    }
-                }
-            }
-            
-            if (pauseCompletionHandler != nil) {
-                pauseCompletionHandler();
-            }
-        }];
-        
-        if (_isRecording) {
-            [self record];
-        }
-    });
-}
-
 - (void)_handleVideoSampleBuffer:(CMSampleBufferRef)sampleBuffer withSession:(SCRecordSession *)recordSession connection:(AVCaptureConnection *)connection {
     if (!recordSession.videoInitializationFailed && !_videoConfiguration.shouldIgnore) {
         if (!recordSession.videoInitialized) {

@@ -78,6 +78,11 @@ extern NSString *__nonnull const SCRecordSessionDocumentDirectory;
 @property (readonly, nonatomic) NSArray<SCRecordSessionSegment *> *__nonnull segments;
 
 /**
+ NSValue wrapped `CMTime`s corresponding to the initial presentation time of each record segment.
+ */
+@property (readonly, nonatomic) NSArray *recordSegmentsFirstFramePresentationTime;
+
+/**
  The duration of the whole recordSession including the current recording segment
  and the previously added record segments.
  */
@@ -145,6 +150,16 @@ extern NSString *__nonnull const SCRecordSessionDocumentDirectory;
 - (void)removeSegmentAtIndex:(NSInteger)segmentIndex deleteFile:(BOOL)deleteFile;
 
 /**
+ Manually add a record segment.
+ */
+- (void)addSegment:(NSURL *)fileUrl initialPresentationTime:(CMTime)initialPresentationTime;
+
+/**
+ Manually insert a record segment.
+ */
+- (void)insertSegment:(NSURL *)fileUrl initialPresentationTime:(CMTime)initialPresentationTime atIndex:(NSInteger)segmentIndex;
+
+/**
  Add a recorded segment.
  */
 - (void)addSegment:(SCRecordSessionSegment *__nonnull)segment;
@@ -183,6 +198,14 @@ extern NSString *__nonnull const SCRecordSessionDocumentDirectory;
  Returns nil and call the completion handler block synchronously if an error happened while preparing the export session.
  */
 - (AVAssetExportSession *__nullable)mergeSegmentsUsingPreset:(NSString *__nonnull)exportSessionPreset completionHandler:(void(^__nonnull)(NSURL *__nullable outputUrl, NSError *__nullable error))completionHandler;
+
+/**
+ Merge the recorded video segments with the given audio segments
+ */
+- (void)mergeRecordSegmentsUsingPreset:(NSString *)exportSessionPreset
+                      audioSegmentURLs:(NSArray *)audioSegmentURLs // NSURLs
+         audioSegmentInitialFrameTimes:(NSArray *)audioInitialFrameTime // NSValue wrapepd CMTimes
+                     completionHandler:(void(^)(NSURL *outputUrl, NSError *error))completionHandler;
 
 /**
  Returns an asset representing all the record segments

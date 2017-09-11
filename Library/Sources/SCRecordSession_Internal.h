@@ -14,6 +14,7 @@
     AVAssetWriterInput *_videoInput;
     AVAssetWriterInput *_audioInput;
     NSMutableArray *_segments;
+    NSMutableArray *_recordSegmentsFirstFramePresentationTime;
     BOOL _audioInitializationFailed;
     BOOL _videoInitializationFailed;
     BOOL _recordSegmentReady;
@@ -48,6 +49,7 @@
 @property (readonly, nonatomic) BOOL currentSegmentHasAudio;
 @property (readonly, nonatomic) BOOL currentSegmentHasVideo;
 @property (readonly, nonatomic) BOOL isUsingMovieFileOutput;
+@property (nonatomic) CMTime currentSegmentFirstFramePresentationTime;
 
 - (void)initializeVideo:(NSDictionary *)videoOptions formatDescription:(CMFormatDescriptionRef)formatDescription error:(NSError **)error;
 - (void)initializeAudio:(NSDictionary *)audioOptions formatDescription:(CMFormatDescriptionRef)formatDescription error:(NSError **)error;
@@ -63,6 +65,8 @@
 
 - (void)notifyMovieFileOutputIsReady;
 
-- (void)appendRecordSegmentUrl:(NSURL *)url info:(NSDictionary *)info error:(NSError *)error completionHandler:(void(^)(SCRecordSessionSegment *segment, NSError* error))completionHandler;
+- (void)appendRecordSegmentUrl:(NSURL *)url info:(NSDictionary *)info initialPresentationTime:(CMTime)initialPresentationTime error:(NSError *)error completionHandler:(void (^)(SCRecordSessionSegment *, NSError *))completionHandler;
+
+- (void)appendRecordSegment:(void(^)(NSInteger segmentNumber, NSError* error))completionHandler error:(NSError *)error url:(NSURL *)url initialPresentationTime:(CMTime)initialPresentationTime  duration:(CMTime)duration;
 
 @end
