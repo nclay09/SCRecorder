@@ -1,7 +1,7 @@
 Pod::Spec.new do |s|
 
   s.name         = "SCRecorder"
-  s.version      = "2.7.4"
+  s.version      = "2.7.5"
   s.summary      = "The camera engine that is complete, for real."
 
   s.description  = <<-DESC
