@@ -92,7 +92,7 @@ static char* SCRecorderPhotoOptionsContext = "PhotoOptionsContext";
         [_audioConfiguration addObserver:self forKeyPath:@"enabled" options:NSKeyValueObservingOptionNew context:SCRecorderAudioEnabledContext];
         [_photoConfiguration addObserver:self forKeyPath:@"options" options:NSKeyValueObservingOptionNew context:SCRecorderPhotoOptionsContext];
         
-        _context = [SCContext contextWithType:SCContextTypeMetal
+        _context = [SCContext contextWithType:[SCContext suggestedContextType]
                                       options:nil].CIContext;
     }
     
@@ -584,7 +584,7 @@ static char* SCRecorderPhotoOptionsContext = "PhotoOptionsContext";
 
 - (SCFilter *)_transformFilterUsingBufferWidth:(size_t)bufferWidth bufferHeight:(size_t)bufferHeight mirrored:(BOOL)mirrored {
     if (_transformFilter == nil || _transformFilterBufferWidth != bufferWidth || _transformFilterBufferHeight != bufferHeight) {
-        BOOL shouldMirrorBuffer = _keepMirroringOnWrite && mirrored;
+        BOOL shouldMirrorBuffer = mirrored;
         
         if (!shouldMirrorBuffer) {
             _transformFilter = nil;
