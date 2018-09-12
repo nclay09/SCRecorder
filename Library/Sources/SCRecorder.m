@@ -92,7 +92,7 @@ static char* SCRecorderPhotoOptionsContext = "PhotoOptionsContext";
         [_audioConfiguration addObserver:self forKeyPath:@"enabled" options:NSKeyValueObservingOptionNew context:SCRecorderAudioEnabledContext];
         [_photoConfiguration addObserver:self forKeyPath:@"options" options:NSKeyValueObservingOptionNew context:SCRecorderPhotoOptionsContext];
         
-        _context = [SCContext contextWithType:[SCContext suggestedContextType]
+        _context = [SCContext contextWithType:SCContextTypeMetal
                                       options:nil].CIContext;
     }
     
