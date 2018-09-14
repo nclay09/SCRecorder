@@ -584,13 +584,12 @@ static char* SCRecorderPhotoOptionsContext = "PhotoOptionsContext";
 
 - (SCFilter *)_transformFilterUsingBufferWidth:(size_t)bufferWidth bufferHeight:(size_t)bufferHeight mirrored:(BOOL)mirrored {
     if (_transformFilter == nil || _transformFilterBufferWidth != bufferWidth || _transformFilterBufferHeight != bufferHeight) {
-        BOOL shouldMirrorBuffer = mirrored;
+        BOOL shouldMirrorBuffer = _keepMirroringOnWrite && mirrored;
         
         if (!shouldMirrorBuffer) {
-            _transformFilter = nil;
+            _transformFilter = [SCFilter filterWithAffineTransform:CGAffineTransformIdentity];
         } else {
             CGAffineTransform tx = CGAffineTransformIdentity;
-            
             _transformFilter = [SCFilter filterWithAffineTransform:CGAffineTransformTranslate(CGAffineTransformScale(tx, -1, 1), -(CGFloat)bufferWidth, 0)];
         }
         
