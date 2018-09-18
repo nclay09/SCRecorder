@@ -587,7 +587,7 @@ static char* SCRecorderPhotoOptionsContext = "PhotoOptionsContext";
         BOOL shouldMirrorBuffer = _keepMirroringOnWrite && mirrored;
         
         if (!shouldMirrorBuffer) {
-            _transformFilter = nil;
+            _transformFilter = [SCFilter filterWithAffineTransform:CGAffineTransformIdentity];
         } else {
             CGAffineTransform tx = CGAffineTransformIdentity;
             
